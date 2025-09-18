@@ -105,7 +105,7 @@ document.getElementById("checkinForm").addEventListener("submit", async function
       await sendCheckin(nameEx, emailRaw, course.name, course.date, "準時");
       result.textContent = "打卡成功！（豁免帳號）";
     } catch {
-      result.textContent = "打卡失敗：無法連線後端（請檢查 GAS 部署或網路）";
+      result.textContent = "打卡失敗：無法連線後端";
     }
     return;
   }
@@ -117,12 +117,12 @@ document.getElementById("checkinForm").addEventListener("submit", async function
   // 3) 檢查是不是今天這堂課
   if (!isToday(course.date)) { result.textContent = "打卡失敗：此課程不在今日"; return; }
 
-  // 4) 檢查課程時間範圍（提前 1 小時可打；一般課超過 10 分算遲到）
+  // 4) 檢查課程時間範圍（提前 1 小時可打；一般課超過 15 分算遲到）
   const [start, end] = String(course.time).split("-");
   const startTime = timeToDate(course.date, start);
   const endTime   = timeToDate(course.date, end);
   const early     = new Date(startTime.getTime() - 60 * 60000);
-  const grace     = new Date(startTime.getTime() + 10 * 60000);
+  const grace     = new Date(startTime.getTime() + 15 * 60000);
 
   let status = "準時";
   if (!course.exemptLateRule) {
@@ -130,7 +130,7 @@ document.getElementById("checkinForm").addEventListener("submit", async function
       result.textContent = "打卡失敗：目前不在可打卡時間內";
       return;
     } else if (now > grace) {
-      status = "遲到";
+      status = "曠課";
     }
   } else {
     // 免遲到場次仍需在可打卡區間
