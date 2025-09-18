@@ -29,12 +29,21 @@ function isEmailExempt(emailRaw) {
 // ========== 後端送單（避免 CORS preflight：不自設 Content-Type） ==========
 function sendCheckin(name, email, courseName, date, status) {
   const payload = { name, email, course: courseName, date, status };
-  return fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
+  return fetch("https://script.google.com/macros/s/AKfycbzMyVqQNkIM9J30FWE3Vjy8pvHZWp93u9IsnawmXc62cOV6ZilwtFosyuNooPsPTLgckw/exec", {
     method: "POST",
     body: JSON.stringify(payload)
   })
   .then(r => r.text())
   .then(t => { console.log("GAS 回應：", t); return t; });
+
+    // 先嘗試 sendBeacon（跨域免CORS）
+  if (navigator.sendBeacon && navigator.sendBeacon(url, blob)) {
+    console.log("✅ sendBeacon 已送出");
+    return Promise.resolve(true);
+  }
+  // 退回 fetch + no-cors（回應不可讀，但會送到）
+  return fetch(url, { method: "POST", mode: "no-cors", body: blob })
+    .then(() => { console.log("✅ fetch(no-cors) 已送出"); return true; });
 }
 
 // ========== 建立課程選單（value 用唯一鍵：date||time||name；一定先畫 placeholder） ==========
