@@ -17,8 +17,9 @@ const STUDENTS = {
   "2024tfciaclass@gmail.com": "星引力"   // ❌ 不豁免
 };
 
-// 豁免遲到與日期限制的帳號
-const EXEMPT_EMAILS = [
-  "b10415041@gmail.com",     // 凱文
-  "cz0806.phone@gmail.com"   // 小逸
-];
+// 豁免遲到與日期限制的帳號（大小寫不敏感）
+const EXEMPT_EMAILS = new Set([
+  "b10415041@gmail.com", // 凱文
+  "cz0806.phone@gmail.com" // 小逸
+].map(s => s.trim().toLowerCase()));
+
