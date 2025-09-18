@@ -1,86 +1,38 @@
-// -------------------- 工具：時間與日期（保留你原本邏輯） --------------------
-const taiwanTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" });
-let now = new Date(taiwanTime);
-
-function timeToDate(dateStr, timeStr) {
-  const [h, m] = timeStr.split(":");
-  return new Date(`${dateStr}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00+08:00`);
-}
-
-function isToday(dateStr) {
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
-  return dateStr === today;
-}
-
-function refreshNow() {
-  const t = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" });
-  now = new Date(t);
-}
-
-// -------------------- 豁免名單判斷（相容 Array / Set，大小寫不敏感） --------------------
-function isEmailExempt(emailRaw) {
-  if (typeof EXEMPT_EMAILS === "undefined") return false;
-  const email = String(emailRaw).trim().toLowerCase();
-  if (EXEMPT_EMAILS instanceof Set) return EXEMPT_EMAILS.has(email);
-  if (Array.isArray(EXEMPT_EMAILS)) {
-    return EXEMPT_EMAILS.some(s => String(s).trim().toLowerCase() === email);
-  }
-  return false;
-}
-
-// -------------------- 傳送到 Google Apps Script（避免 CORS preflight） --------------------
-function sendCheckin(name, email, courseName, date, status) {
-  const payload = { name, email, course: courseName, date, status };
-
-  return fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
-    method: "POST",
-    // 不手動設 Content-Type，讓瀏覽器送 text/plain，避免 preflight
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.text())
-  .then(t => { console.log("GAS 回應：", t); return t; });
-}
-
-// -------------------- 表單送出（沿用你原本的「用課名找課」） --------------------
-document.getElementById("checkinForm").addEventListener("submit", async function (e) {
+document.getElementById("checkinForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  refreshNow();
 
+  const emailRaw = document.getElementById("email").value.trim();
+  const email = emailRaw.toLowerCase();                 // ✅ 大小寫不敏感
+  const selectedCourse = document.getElementById("courseSelect").value;
+  const course = COURSES.find(c => c.name === selectedCourse);
   const result = document.getElementById("result");
   result.textContent = "";
 
-  const emailRaw = (document.getElementById("email").value || "").trim();
-  const emailLC  = emailRaw.toLowerCase();
-  const selectedCourseName = document.getElementById("courseSelect").value;
-
-  if (!emailRaw) { result.textContent = "請輸入 Email"; return; }
-  if (!selectedCourseName) { result.textContent = "請選擇課程"; return; }
-
-  // ✅ 這裡沿用你最初的做法：用「課名」去找課（即使重名會命中第一筆，也照你原本邏輯）
-  const course = (typeof COURSES !== "undefined")
-    ? COURSES.find(c => c.name === selectedCourseName)
-    : null;
-
-  if (!course) { result.textContent = "課程資料錯誤，請重整頁面"; return; }
-
-  // ✅ 豁免帳號：最優先無條件通過（不看名單/日期/時間）
-  if (isEmailExempt(emailRaw)) {
-    const nameEx = (typeof STUDENTS !== "undefined" ? STUDENTS[emailRaw] : "") || "（豁免帳號）";
-    try {
-      await sendCheckin(nameEx, emailRaw, course.name, course.date, "準時");
-      result.textContent = "打卡成功！（豁免帳號）";
-    } catch {
-      result.textContent = "打卡失敗：無法連線後端（請檢查 GAS 部署或網路）";
-    }
+  if (!emailRaw) {
+    result.textContent = "請輸入 Email";
+    return;
+  }
+  if (!course) {
+    result.textContent = "請選擇課程";
     return;
   }
 
-  // ✅ 非豁免 → 檢查是否在名單中
-  if (typeof STUDENTS === "undefined" || !STUDENTS[emailRaw]) {
+  // ✅ 豁免帳號：最優先＆無條件通過（不看名單/日期/時間）
+  const isExempt = EXEMPT_EMAILS.has(email);
+  if (isExempt) {
+    const name = STUDENTS[emailRaw] || "（豁免帳號）";
+    console.log("✅ 豁免帳號，無條件通過打卡");
+    sendCheckin(name, emailRaw, course.name, course.date, "準時");
+    result.textContent = "打卡成功！（豁免帳號）";
+    return;
+  }
+
+  // ✅ 非豁免 → 檢查是否在名單中（原本邏輯保留）
+  const name = STUDENTS[emailRaw];
+  if (!name) {
     result.textContent = "打卡失敗：Email 不在名單中";
     return;
   }
-  const name = STUDENTS[emailRaw];
 
   // ✅ 檢查是不是今天的課程
   if (!isToday(course.date)) {
@@ -88,12 +40,12 @@ document.getElementById("checkinForm").addEventListener("submit", async function
     return;
   }
 
-  // ✅ 檢查課程時間範圍（維持你原本的提早1小時、開課10分鐘寬限）
-  const [start, end] = String(course.time).split("-");
+  // ✅ 檢查課程時間範圍
+  const [start, end] = course.time.split("-");
   const startTime = timeToDate(course.date, start);
-  const endTime   = timeToDate(course.date, end);
-  const early     = new Date(startTime.getTime() - 60 * 60000); // 提前1小時
-  const grace     = new Date(startTime.getTime() + 10 * 60000); // 開始後10分鐘
+  const endTime = timeToDate(course.date, end);
+  const early = new Date(startTime.getTime() - 60 * 60000); // 提前1小時
+  const grace = new Date(startTime.getTime() + 10 * 60000); // 開始後10分鐘
 
   let status = "準時";
 
@@ -111,11 +63,7 @@ document.getElementById("checkinForm").addEventListener("submit", async function
     }
   }
 
-  // ✅ 送出
-  try {
-    await sendCheckin(name, emailRaw, course.name, course.date, status);
-    result.textContent = "打卡成功！歡迎上課～";
-  } catch {
-    result.textContent = "打卡失敗：無法連線後端（請檢查 GAS 部署或網路）";
-  }
+  sendCheckin(name, emailRaw, course.name, course.date, status);
+  result.textContent = "打卡成功！歡迎上課～";
 });
+
