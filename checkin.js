@@ -37,7 +37,7 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
   const startTime = timeToDate(course.date, start);
   const endTime = timeToDate(course.date, end);
   const early = new Date(startTime.getTime() - 60 * 60000); // 提前 1 小時
-  const grace = new Date(startTime.getTime() + 10 * 60000); // 課後 10 分鐘
+  const grace = new Date(startTime.getTime() + 10 * 60000); // 開始後 10 分鐘
 
   let status = "準時";
 
@@ -48,7 +48,6 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
       status = "遲到";
     }
   } else {
-    // 豁免者 or 特殊課程
     if (now < early || now > endTime) {
       return result.textContent = "打卡失敗：目前不在打卡有效時間範圍";
     }
@@ -62,7 +61,7 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
     status: status
   };
 
-  // ✅ 送出到 Google Sheet Web App
+  // ✅ 替換成你自己的 Google Apps Script Web App URL
   fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
     method: "POST",
     headers: {
@@ -83,3 +82,4 @@ window.onload = () => {
     select.appendChild(opt);
   });
 };
+
