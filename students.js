@@ -1,6 +1,6 @@
 // 所有學生名單（email → name）
 const STUDENTS = {
-  "quartararorossi2046@gmail.com": "蕭文彥",
+  "xioawenyan78@gmail.com": "蕭文彥",
   "a28616319@yahoo.com.tw": "吳秉翰",
   "a82452898@gmail.com": "林可馨",
   "rex940723@gmail.com": "魏晨名",
