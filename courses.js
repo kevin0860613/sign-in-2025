@@ -23,11 +23,11 @@ const COURSES = [
   { name: "拍攝與鏡位模擬", date: "2025-10-26", time: "16:00-19:00" },
 
   // 短片拍攝週 (免遲到)
-  { name: "短片拍攝 Day 1", date: "2025-10-27", time: "09:00-18:00", exemptLateRule: true },
-  { name: "短片拍攝 Day 2", date: "2025-10-28", time: "09:00-18:00", exemptLateRule: true },
-  { name: "短片拍攝 Day 3", date: "2025-10-29", time: "09:00-18:00", exemptLateRule: true },
-  { name: "短片拍攝 Day 4", date: "2025-10-30", time: "09:00-18:00", exemptLateRule: true },
-  { name: "短片拍攝 Day 5", date: "2025-10-31", time: "09:00-18:00", exemptLateRule: true },
+  { name: "短片拍攝 Day 1", date: "2025-10-27", time: "06:00-22:00", exemptLateRule: true },
+  { name: "短片拍攝 Day 2", date: "2025-10-28", time: "06:00-22:00", exemptLateRule: true },
+  { name: "短片拍攝 Day 3", date: "2025-10-29", time: "06:00-22:00", exemptLateRule: true },
+  { name: "短片拍攝 Day 4", date: "2025-10-30", time: "06:00-22:00", exemptLateRule: true },
+  { name: "短片拍攝 Day 5", date: "2025-10-31", time: "06:00-22:00", exemptLateRule: true },
 
   { name: "演員經驗分享", date: "2025-11-07", time: "19:00-21:00" },
   { name: "舞台排練及演出指導", date: "2025-11-08", time: "10:00-13:00" },
