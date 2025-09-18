@@ -38,10 +38,4 @@ const COURSES = [
   { name: "呈現演出", date: "2025-11-09", time: "14:00-16:00", exemptLateRule: true },
   { name: "舞台排練及演出指導", date: "2025-11-09", time: "16:30-18:30", exemptLateRule: true },
   { name: "媒合會", date: "2025-11-09", time: "19:30-21:30", exemptLateRule: true }
-{
-  name: "打卡測試課",
-  date: "2025-09-18",  // 今天
-  time: "14:00-16:00",
-  exemptLateRule: true // 讓任何時間都可打
-}
 ];
