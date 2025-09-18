@@ -29,19 +29,19 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
     return result.textContent = "打卡失敗：Email 不在名單中";
   }
 
-  // 豁免帳號：跳過所有時間與日期限制，直接通過
+  // ✅ 豁免帳號 → 直接打卡通過，不檢查任何時間
   if (isExempt) {
     sendCheckin(name || "（豁免帳號）", email, course.name, course.date, "準時");
     result.textContent = "打卡成功！（豁免帳號）";
     return;
   }
 
-  // 非豁免帳號，檢查日期
+  // ⛔ 非豁免帳號 → 檢查日期
   if (!isToday(course.date)) {
     return result.textContent = "打卡失敗：此課程不在今日";
   }
 
-  // 檢查時間範圍
+  // ⛔ 非豁免帳號 → 檢查時間範圍
   const [start, end] = course.time.split("-");
   const startTime = timeToDate(course.date, start);
   const endTime = timeToDate(course.date, end);
@@ -62,11 +62,12 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
     }
   }
 
+  // ✅ 通過所有檢查 → 送出打卡
   sendCheckin(name, email, course.name, course.date, status);
   result.textContent = "打卡成功！歡迎上課～";
 });
 
-// ✅ 統一送出打卡資料
+// ✅ 統一送出資料
 function sendCheckin(name, email, courseName, date, status) {
   const payload = {
     name,
@@ -74,3 +75,23 @@ function sendCheckin(name, email, courseName, date, status) {
     course: courseName,
     date,
     status
+  };
+
+  fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
+window.onload = () => {
+  const select = document.getElementById("courseSelect");
+  COURSES.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.name;
+    opt.textContent = `${c.date}｜${c.name}`;
+    select.appendChild(opt);
+  });
+};
