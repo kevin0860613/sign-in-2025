@@ -11,13 +11,13 @@ const STUDENTS = {
   "clara3333333@gmail.com": "黃榆珊",
   "cchangray@gmail.com": "張玴睿",
 
-  // 測試帳號（也列在名單內）
+  // 測試帳號
   "b10415041@gmail.com": "凱文",       // ✅ 豁免
   "cz0806.phone@gmail.com": "小逸",     // ✅ 豁免
   "2024tfciaclass@gmail.com": "星引力"  // ❌ 不豁免
 };
 
-// ✅ 豁免名單 → 改成 Set，方便快速查詢
+// ✅ 豁免名單（只有這一份，不要再有重複宣告）
 const EXEMPT_EMAILS = new Set([
   "b10415041@gmail.com",
   "cz0806.phone@gmail.com"
