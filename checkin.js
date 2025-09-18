@@ -29,19 +29,28 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
     return result.textContent = "打卡失敗：Email 不在名單中";
   }
 
-  if (!isToday(course.date) && !isExempt) {
+  // 豁免帳號：跳過所有時間與日期限制，直接通過
+  if (isExempt) {
+    sendCheckin(name || "（豁免帳號）", email, course.name, course.date, "準時");
+    result.textContent = "打卡成功！（豁免帳號）";
+    return;
+  }
+
+  // 非豁免帳號，檢查日期
+  if (!isToday(course.date)) {
     return result.textContent = "打卡失敗：此課程不在今日";
   }
 
+  // 檢查時間範圍
   const [start, end] = course.time.split("-");
   const startTime = timeToDate(course.date, start);
   const endTime = timeToDate(course.date, end);
   const early = new Date(startTime.getTime() - 60 * 60000); // 提前 1 小時
-  const grace = new Date(startTime.getTime() + 10 * 60000); // 開始後 10 分鐘
+  const grace = new Date(startTime.getTime() + 10 * 60000); // 課後 10 分鐘
 
   let status = "準時";
 
-  if (!isExempt && !course.exemptLateRule) {
+  if (!course.exemptLateRule) {
     if (now < early || now > endTime) {
       return result.textContent = "打卡失敗：目前不在可打卡時間內";
     } else if (now > grace) {
@@ -53,33 +62,15 @@ document.getElementById("checkinForm").addEventListener("submit", function (e) {
     }
   }
 
-  const payload = {
-    name: name || "（豁免帳號）",
-    email: email,
-    course: course.name,
-    date: course.date,
-    status: status
-  };
-
-  // ✅ 替換成你自己的 Google Apps Script Web App URL
-  fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
+  sendCheckin(name, email, course.name, course.date, status);
   result.textContent = "打卡成功！歡迎上課～";
 });
 
-window.onload = () => {
-  const select = document.getElementById("courseSelect");
-  COURSES.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c.name;
-    opt.textContent = `${c.date}｜${c.name}`;
-    select.appendChild(opt);
-  });
-};
-
+// ✅ 統一送出打卡資料
+function sendCheckin(name, email, courseName, date, status) {
+  const payload = {
+    name,
+    email,
+    course: courseName,
+    date,
+    status
