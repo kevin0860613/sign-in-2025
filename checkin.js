@@ -148,7 +148,133 @@ document.getElementById("checkinForm").addEventListener("submit", async function
   let status = "準時";
 
   if (!course.exemptLateRule) {
-    // 一般課：早於 early 或晚於 end → 擋；超過 grace → 遲到
+// -------------------- 工具：時間與日期 --------------------
+const taiwanTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" });
+let now = new Date(taiwanTime);
+
+function timeToDate(dateStr, timeStr) {
+  const [h, m] = timeStr.split(":");
+  return new Date(`${dateStr}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00+08:00`);
+}
+function isToday(dateStr) {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+  return dateStr === today;
+}
+function refreshNow() {
+  const t = new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" });
+  now = new Date(t);
+}
+
+// -------------------- 工具：豁免名單判斷 --------------------
+function isEmailExempt(emailRaw) {
+  if (typeof EXEMPT_EMAILS === "undefined") return false;
+  const email = String(emailRaw).trim().toLowerCase();
+  if (EXEMPT_EMAILS instanceof Set) return EXEMPT_EMAILS.has(email);
+  if (Array.isArray(EXEMPT_EMAILS)) {
+    return EXEMPT_EMAILS.some(s => String(s).trim().toLowerCase() === email);
+  }
+  return false;
+}
+
+// -------------------- 送出到 Google Apps Script --------------------
+function sendCheckin(name, email, courseName, date, status) {
+  const payload = { name, email, course: courseName, date, status };
+  return fetch("https://script.google.com/macros/s/AKfycbyj3h3oq2B9qYCkKuZLwo4IjPKs1_CvVELDCN0c9WbXQVuN6-Rc4KpmYmjdTJMNNCHVrQ/exec", {
+    method: "POST",
+    // 不自設 Content-Type，避免 CORS preflight
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.text())
+  .then(t => { console.log("GAS 回應：", t); return t; });
+}
+
+// -------------------- 初始化課程選單（強制覆蓋舊內容） --------------------
+(function mountCourseOptions() {
+  const select = document.getElementById("courseSelect");
+  if (!select || typeof COURSES === "undefined") return;
+
+  // 閉嘴重來：清空舊 option（避免舊程式先塞入用「課名當 value」的選項）
+  while (select.firstChild) select.removeChild(select.firstChild);
+
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = "— 請選擇課程 —";
+  ph.disabled = true;
+  ph.selected = true;
+  select.appendChild(ph);
+
+  COURSES.forEach((c, idx) => {
+    const opt = document.createElement("option");
+    opt.value = String(idx);                // 用索引做 value，避免重名撞到
+    opt.textContent = `${c.date}｜${c.name}（${c.time}）`;
+    select.appendChild(opt);
+  });
+})();
+
+// -------------------- 表單行為 --------------------
+document.getElementById("checkinForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  refreshNow();
+
+  const result = document.getElementById("result");
+  result.textContent = "";
+
+  const emailInput = document.getElementById("email");
+  const courseSelect = document.getElementById("courseSelect");
+
+  const emailRaw = (emailInput.value || "").trim();
+  if (!emailRaw) { result.textContent = "請輸入 Email"; return; }
+
+  const selectedVal = courseSelect.value;
+  if (!selectedVal) { result.textContent = "請選擇課程"; return; }
+
+  // 相容：如果 value 是數字索引，直接取；若不是，就當作課名去找
+  let course = null;
+  const idx = Number(selectedVal);
+  if (!Number.isNaN(idx) && typeof COURSES !== "undefined" && COURSES[idx]) {
+    course = COURSES[idx];
+  } else if (typeof COURSES !== "undefined") {
+    course = COURSES.find(c =>
+      c.name === selectedVal ||
+      `${c.date}｜${c.name}（${c.time}）` === selectedVal
+    );
+  }
+  if (!course) { result.textContent = "課程資料錯誤，請重整頁面"; return; }
+
+  // 1) 豁免帳號：最優先無條件通過
+  if (isEmailExempt(emailRaw)) {
+    const nameEx = (typeof STUDENTS !== "undefined" ? STUDENTS[emailRaw] : "") || "（豁免帳號）";
+    try {
+      await sendCheckin(nameEx, emailRaw, course.name, course.date, "準時");
+      result.textContent = "打卡成功！（豁免帳號）";
+    } catch {
+      result.textContent = "打卡失敗：無法連線後端（請檢查 GAS 部署或網路）";
+    }
+    return;
+  }
+
+  // 2) 非豁免 → 檢查是否在名單中
+  if (typeof STUDENTS === "undefined" || !STUDENTS[emailRaw]) {
+    result.textContent = "打卡失敗：Email 不在名單中";
+    return;
+  }
+  const name = STUDENTS[emailRaw];
+
+  // 3) 檢查是不是今天這堂課
+  if (!isToday(course.date)) {
+    result.textContent = "打卡失敗：此課程不在今日";
+    return;
+  }
+
+  // 4) 檢查課程時間範圍
+  const [start, end] = String(course.time).split("-");
+  const startTime = timeToDate(course.date, start);
+  const endTime   = timeToDate(course.date, end);
+  const early     = new Date(startTime.getTime() - 60 * 60000); // 提前 1 小時
+  const grace     = new Date(startTime.getTime() + 10 * 60000); // 開始後 10 分鐘
+
+  let status = "準時";
+  if (!course.exemptLateRule) {
     if (now < early || now > endTime) {
       result.textContent = "打卡失敗：目前不在可打卡時間內";
       return;
@@ -156,7 +282,6 @@ document.getElementById("checkinForm").addEventListener("submit", async function
       status = "遲到";
     }
   } else {
-    // 拍攝/呈現等：仍須落在 early~end 範圍，但不計遲到（維持你原設計）
     if (now < early || now > endTime) {
       result.textContent = "打卡失敗：目前不在打卡有效時間範圍";
       return;
