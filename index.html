@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>課程簽到系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="container-fluid">
+    <ul><li><strong>TFCIACLASS 打卡系統</strong></li></ul>
+    <ul>
+      <li><a href="#">首頁</a></li>
+      <li><a href="#">關於</a></li>
+      <li><a href="#" role="button">聯絡</a></li>
+    </ul>
+  </nav>
+  <main class="container">
+    <div class="grid">
+      <section>
+        <hgroup>
+          <h2>打卡簽到</h2>
+          <h3>請輸入 Email 並選擇課程</h3>
+        </hgroup>
+        <form id="checkinForm">
+          <input type="email" id="email" name="email" placeholder="請輸入您的 Email" required>
+          <select id="courseSelect" required></select>
+          <button type="submit">簽到</button>
+        </form>
+        <p id="result"></p>
+      </section>
+    </div>
+  </main>
+  <script src="students.js"></script>
+  <script src="courses.js"></script>
+  <script src="checkin.js"></script>
+</body>
+</html>
