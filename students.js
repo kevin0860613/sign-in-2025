@@ -12,19 +12,13 @@ const STUDENTS = {
   "cchangray@gmail.com": "張玴睿",
 
   // 測試帳號（也列在名單內）
-  "b10415041@gmail.com": "凱文",        // ✅ 豁免
-  "cz0806.phone@gmail.com": "小逸",      // ✅ 豁免
-  "2024tfciaclass@gmail.com": "星引力"   // ❌ 不豁免
+  "b10415041@gmail.com": "凱文",       // ✅ 豁免
+  "cz0806.phone@gmail.com": "小逸",     // ✅ 豁免
+  "2024tfciaclass@gmail.com": "星引力"  // ❌ 不豁免
 };
 
-// 豁免遲到與日期限制的帳號（大小寫不敏感）
+// ✅ 豁免名單 → 改成 Set，方便快速查詢
 const EXEMPT_EMAILS = new Set([
-  "b10415041@gmail.com",     // 凱文
-  "cz0806.phone@gmail.com"   // 小逸
-].map(s => s.trim().toLowerCase()));
-
-const EXEMPT_EMAILS = new Set([
-  "b10415041@gmail.com", // 凱文
-  "cz0806.phone@gmail.com" // 小逸
-].map(s => s.trim().toLowerCase()));
-
+  "b10415041@gmail.com",
+  "cz0806.phone@gmail.com"
+].map(s => s.toLowerCase()));
