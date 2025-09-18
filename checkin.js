@@ -28,10 +28,9 @@ function refreshNow() {
 function isEmailExempt(emailRaw) {
   if (typeof EXEMPT_EMAILS === "undefined") return false;
   const email = String(emailRaw).trim().toLowerCase();
-  // Set 走 has；Array 走 includes
   if (EXEMPT_EMAILS instanceof Set) return EXEMPT_EMAILS.has(email);
   if (Array.isArray(EXEMPT_EMAILS)) {
-    return EXEMPT_EMAILS.map(s => String(s).trim().toLowerCase()).includes(email);
+    return EXEMPT_EMAILS.some(s => String(s).trim().toLowerCase() === email);
   }
   return false;
 }
@@ -57,6 +56,28 @@ function sendCheckin(name, email, courseName, date, status) {
   });
 }
 
+// -------------------- 初始化課程選單（用索引做 value） --------------------
+
+(function mountCourseOptions() {
+  const select = document.getElementById("courseSelect");
+  if (!select || typeof COURSES === "undefined") return;
+
+  // 先加一個placeholder，避免沒選就送出
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = "— 請選擇課程 —";
+  ph.disabled = true;
+  ph.selected = true;
+  select.appendChild(ph);
+
+  COURSES.forEach((c, idx) => {
+    const opt = document.createElement("option");
+    opt.value = String(idx); // 用索引避免重名撞到第一筆
+    opt.textContent = `${c.date}｜${c.name}（${c.time}）`;
+    select.appendChild(opt);
+  });
+})();
+
 // -------------------- 表單行為 --------------------
 
 document.getElementById("checkinForm").addEventListener("submit", async function (e) {
@@ -77,14 +98,21 @@ document.getElementById("checkinForm").addEventListener("submit", async function
     return;
   }
 
-  const selectedCourse = courseSelect.value;
-  const course = (typeof COURSES !== "undefined") ? COURSES.find(c => c.name === selectedCourse) : null;
-  if (!course) {
+  const selectedVal = courseSelect.value;
+  if (!selectedVal) {
     result.textContent = "請選擇課程";
     return;
   }
 
-  // 1) 豁免帳號：最優先且無條件通過（不看名單、不看日期、不看時間）
+  // 由索引直接取課程
+  const idx = Number(selectedVal);
+  const course = (typeof COURSES !== "undefined" && !Number.isNaN(idx)) ? COURSES[idx] : null;
+  if (!course) {
+    result.textContent = "課程資料錯誤，請重整頁面";
+    return;
+  }
+
+  // 1) 豁免帳號：最優先且無條件通過（不看名單/日期/時間）
   if (isEmailExempt(emailRaw)) {
     const name = (typeof STUDENTS !== "undefined" ? STUDENTS[emailRaw] : "") || "（豁免帳號）";
     console.log("✅ 豁免帳號，無條件通過打卡");
@@ -144,18 +172,3 @@ document.getElementById("checkinForm").addEventListener("submit", async function
   }
 });
 
-// -------------------- 載入課程選單（若頁面未先塞） --------------------
-
-(function mountCourseOptions() {
-  const select = document.getElementById("courseSelect");
-  if (!select) return;
-  if (!select.options || select.options.length === 0) {
-    if (typeof COURSES === "undefined") return;
-    COURSES.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.name;
-      opt.textContent = `${c.date}｜${c.name}`;
-      select.appendChild(opt);
-    });
-  }
-})();
