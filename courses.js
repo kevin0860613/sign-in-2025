@@ -37,6 +37,5 @@ const COURSES = [
   { name: "舞台排練及演出指導", date: "2025-11-09", time: "10:00-13:00" },
   { name: "呈現演出", date: "2025-11-09", time: "14:00-16:00", exemptLateRule: true },
   { name: "舞台排練及演出指導", date: "2025-11-09", time: "16:30-18:30", exemptLateRule: true },
-  { name: "媒合會", date: "2025-11-09", time: "19:30-21:30", exemptLateRule: true },
- { name: "測試", date: "2025-09-20", time: "01:00-01:30" }
+  { name: "媒合會", date: "2025-11-09", time: "19:30-21:30", exemptLateRule: true }
 ];
